@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html dir="rtl" lang="fa">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>شمارش روزهای تاریخ شمسی</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: Tahoma, Arial, sans-serif;
+        }
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 0;
+            padding: 20px;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 500px;
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .input-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #34495e;
+        }
+        .input-row {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        input {
+            padding: 12px;
+            width: 100px;
+            text-align: center;
+            border: 2px solid #bdc3c7;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+        input:focus {
+            border-color: #3498db;
+            outline: none;
+        }
+        .button-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin: 20px 0;
+        }
+        button {
+            background: #2ecc71;
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.3s;
+        }
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+        .save-btn { background: #2ecc71; }
+        .save-btn:hover { background: #27ae60; }
+        .reset-btn { background: #e74c3c; }
+        .reset-btn:hover { background: #c0392b; }
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            border-right: 5px solid #3498db;
+            line-height: 1.8;
+        }
+        .today {
+            background: #fff3cd;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            border: 1px solid #ffeaa7;
+            text-align: center;
+        }
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📅 شمارش روزهای تاریخ شمسی</h1>
+        
+        <div class="today" id="todayDisplay">
+            در حال محاسبه تاریخ امروز...
+        </div>
+        
+        <div class="input-group">
+            <label>تاریخ شروع (شمسی):</label>
+            <div class="input-row">
+                <div>
+                    <label for="year">سال</label>
+                    <input type="number" id="year" placeholder="1403" min="1300" max="1500">
+                </div>
+                <div>
+                    <label for="month">ماه</label>
+                    <input type="number" id="month" placeholder="1" min="1" max="12">
+                </div>
+                <div>
+                    <label for="day">روز</label>
+                    <input type="number" id="day" placeholder="1" min="1" max="31">
+                </div>
+            </div>
+        </div>
+        
+        <div class="button-group">
+            <button class="save-btn" onclick="saveAndCalculate()">💾 ذخیره و محاسبه</button>
+            <button class="reset-btn" onclick="resetAll()">🔄 بازنشانی</button>
+        </div>
+        
+        <div class="result" id="result">
+            لطفاً تاریخ شروع را وارد کنید
+        </div>
+    </div>
+
+    <script>
+        // نمایش تاریخ امروز به شمسی
+        function getTodayPersian() {
+            const today = new Date();
+            const options = {
+                year: 'numeric',
+                month: '2-digit',
+                day: '2-digit',
+                calendar: 'persian',
+                numberingSystem: 'arab'
+            };
+            return today.toLocaleDateString('fa-IR', options);
+        }
+
+        // تبدیل تاریخ شمسی به میلادی (محاسبه تقریبی)
+        function persianToGregorian(pYear, pMonth, pDay) {
+            // این یک تبدیل تقریبی است
+            const baseDate = new Date(622, 2, 21); // شروع تاریخ شمسی
+            const persianYear = pYear - 1;
+            const totalDays = persianYear * 365 + 
+                            Math.floor((persianYear + 1) / 4) +
+                            (pMonth <= 6 ? (pMonth - 1) * 31 : 186 + (pMonth - 7) * 30) +
+                            pDay;
+            
+            const gregorianDate = new Date(baseDate);
+            gregorianDate.setDate(gregorianDate.getDate() + totalDays);
+            return gregorianDate;
+        }
+
+        // محاسبه تفاوت روزها
+        function calculateDaysDifference(startDate) {
+            const today = new Date();
+            const diffTime = Math.abs(today - startDate);
+            const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+            return diffDays;
+        }
+
+        // ذخیره در localStorage
+        function saveToStorage(year, month, day) {
+            const data = { year, month, day };
+            localStorage.setItem('persianDateCounter', JSON.stringify(data));
+        }
+
+        // بارگذاری از localStorage
+        function loadFromStorage() {
+            const saved = localStorage.getItem('persianDateCounter');
+            return saved ? JSON.parse(saved) : null;
+        }
+
+        // اعتبارسنجی تاریخ
+        function validateDate(year, month, day) {
+            if (!year || !month || !day) {
+                return 'لطفاً تمام فیلدها را پر کنید';
+            }
+            
+            if (year < 1300 || year > 1500) {
+                return 'سال باید بین ۱۳۰۰ تا ۱۵۰۰ باشد';
+            }
+            
+            if (month < 1 || month > 12) {
+                return 'ماه باید بین ۱ تا ۱۲ باشد';
+            }
+            
+            if (day < 1 || day > 31) {
+                return 'روز باید بین ۱ تا ۳۱ باشد';
+            }
+            
+            return null;
+        }
+
+        // تابع اصلی محاسبه
+        function saveAndCalculate() {
+            const year = parseInt(document.getElementById('year').value);
+            const month = parseInt(document.getElementById('month').value);
+            const day = parseInt(document.getElementById('day').value);
+            
+            // اعتبارسنجی
+            const error = validateDate(year, month, day);
+            if (error) {
+                showResult(error, true);
+                return;
+            }
+            
+            // ذخیره
+            saveToStorage(year, month, day);
+            
+            // محاسبه
+            const startDate = persianToGregorian(year, month, day);
+            const daysPassed = calculateDaysDifference(startDate);
+            
+            // نمایش نتیجه
+            const result = `
+                <strong>✅ تاریخ شروع:</strong> ${year}/${month}/${day}<br>
+                <strong>📅 روزهای گذشته:</strong> <span style="color: #e74c3c; font-size: 18px;">${daysPassed} روز</span><br>
+                <strong>📊 فردا:</strong> ${daysPassed + 1} روز<br>
+                <hr>
+                <small>💡 این برنامه تاریخ را ذخیره می‌کند. دفعه بعد نیازی به وارد کردن مجدد نیست.</small>
+            `;
+            
+            showResult(result, false);
+        }
+
+        // نمایش نتیجه
+        function showResult(message, isError) {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = message;
+            resultDiv.className = isError ? 'result error' : 'result';
+        }
+
+        // بازنشانی
+        function resetAll() {
+            document.getElementById('year').value = '';
+            document.getElementById('month').value = '';
+            document.getElementById('day').value = '';
+            localStorage.removeItem('persianDateCounter');
+            showResult('همه اطلاعات پاک شدند. لطفاً تاریخ جدید وارد کنید.', false);
+        }
+
+        // بارگذاری اولیه
+        function init() {
+            // نمایش تاریخ امروز
+            document.getElementById('todayDisplay').textContent = `امروز: ${getTodayPersian()}`;
+            
+            // بارگذاری تاریخ ذخیره شده
+            const saved = loadFromStorage();
+            if (saved) {
+                document.getElementById('year').value = saved.year;
+                document.getElementById('month').value = saved.month;
+                document.getElementById('day').value = saved.day;
+                showResult('✅ تاریخ قبلی بارگذاری شد. برای محاسبه دکمه "ذخیره و محاسبه" را بزنید.', false);
+            }
+        }
+
+        // اجرای اولیه
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
